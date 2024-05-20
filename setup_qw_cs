@@ -1,0 +1,219 @@
+#!/usr/bin/env bash
+# setup_qw_cs: sets a reasonable Cloud Shell environment to be used in Qwiklabs.
+#              Designed to be installed straight from GitHub, pulling additional
+#              assets from there.
+# (C) Javier Cañadillas, 2024 - javier@canadillas.org
+
+# Prevent this script from being sourced
+#shellcheck disable=SC2317
+return 0  2>/dev/null || :
+
+set -uo pipefail
+
+# Prepare script initialization variables and functions
+_init_script() {
+  ## Main Script vars
+  script_name="setup_qw_cs"
+  export CONFIG_DIR="$HOME/.config/cloudshell"
+  branch="${GIT_BRANCH:-main}" # Allows to pass a variable with the branch to be used
+  set_gemini="${SET_GEMINI:-true}"
+
+  # Bash logging configuration (see https://askubuntu.com/a/1345538)
+  log_file="/tmp/$script_name.log"
+  date "+%Y-%m-%d %H:%M:%S" >> "$log_file"
+  # Send stdout and stderr ALSO to log_file
+  exec 1> >(tee -ia "$log_file")
+  exec 2> >(tee -ia "$log_file" >& 2)
+  # Send xtrace ONLY to log_file
+  exec {FD}>> "$log_file"
+  export BASH_XTRACEFD="$FD"
+  set -x
+
+  # Repo URIs for all assets
+  git_base_uri="https://raw.githubusercontent.com/javiercanadillas/valeo-cloudshell-setup/${branch}"
+  declare -A -g FILE_NAMES
+  export FILE_NAMES=(
+    [bash_main_config]="main_config.bash"
+    [bash_custom_config]="custom_config.bash"
+    [user_setup]="user_setup.bash"
+    [bash_prompt]="prompt.bash"
+    [cust_env]=".customize_environment"
+    [extensions_installer]="extensions_installer.bash"
+    [codeoss_settings]="settings.json"
+    [codeoss_keybindings]="keybindings.json"
+  )
+
+  # Look & feel related vars
+  red=$(tput setaf 1)
+  green=$(tput setaf 2)
+  reset=$(tput sgr0)
+  printf -v name_padding '%*s' ${#script_name}
+  
+  # Format _info messages with script name in green
+  _info() {
+    echo "${green}${script_name}${reset}: ${1}" >&2
+  }
+  
+  # Format _error messages with script name in red
+  _error() {
+    echo "${red}${script_name}${reset}: ${1}" >&2
+  }
+
+  # Padded echo, to pretty print additional messages considering
+  # the script name lenght
+  _p_echo() {
+    local -r msg="${1}"
+    shift 1
+    echo "$name_padding  $msg" >&2
+  }
+
+  # Download a file from git
+  #   E.g.: github-download <git_dwl_uri> <dest_dir>
+  _download_file() {
+    local -r git_dwl_uri="$1"
+    shift
+    local -r dest_dir="${1:-"$CONFIG_DIR"}"
+    shift
+    if [[ -d "$dest_dir" ]]; then
+      pushd "$dest_dir" > /dev/null || exit
+      curl -sLJO "$git_dwl_uri" || _error "Could not download $git_dwl_uri"
+      popd > /dev/null || exit
+    else
+      _error "$dest_dir does not exist, please check that it does."
+    fi
+  }
+}
+
+# Make sure this script is run from a Cloud Shell VM
+check_cloudshell() {
+  _info "Checking that you're running a Cloud Shell VM..."
+  [[ "$CLOUD_SHELL" == "true" ]]  || {
+    _error "You must run this script from a Cloud Shell VM"
+    exit 1;
+  }
+}
+
+# Check that project ID and region have been set by the student in Qwiklabs
+check_gcp_env() {
+  # This script should not continue if Project ID is not set
+  _info "Checking that Project ID has been properly set..."
+  project_id="${PROJECT_ID:-$(gcloud config get-value project --quiet 2> /dev/null)}"
+  [[ -z $project_id ]] && {
+    _error "Project ID has not been set. Please, run \"gcloud config set project <project_id>\" and try again."; exit 1; }
+  export PROJECT_ID="$project_id" # export it for further scripts
+
+  _info "Checking existing cloud region..."
+  region="${REGION:-$(gcloud config get-value compute/region 2>/dev/null)}"
+  [[ -z $region ]] && {
+    _info "No region was provided. Assigning default compute region europe-west1."; region="europe-west1"; }
+  export REGION="$region" # export it for further scripts
+}
+
+# Create a gcloud SDK configuration for convenience
+gcloud_sdk_setup() {
+  _info "Setting up gcloud CLI configuration..."
+  export CLOUDSDK_CONFIG="$HOME/.config/gcloud"
+  gcloud config configurations create default --no-user-output-enabled 1>&2
+  gcloud config set project "$project_id" --no-user-output-enabled 1>&2
+  gcloud config set compute/region "$region" --no-user-output-enabled --quiet --verbosity none 1>&2
+  gcloud config set run/region "$region" --no-user-output-enabled 1>&2
+}
+
+# Download main assets used by this installer from GitHub
+# to the $CONFIG_DIR directory, to later be processed by the script
+download_assets() {
+  _info "Creating Cloud Shell assets config dir..."
+  mkdir -p "$CONFIG_DIR" || _error "Could not create $CONFIG_DIR"
+  _info "Downloading assets from GitHub..."
+  for i in "${!FILE_NAMES[@]}"; do
+    file_name="${FILE_NAMES[$i]}"
+    _p_echo "Downloading $file_name"
+    file_uri="${git_base_uri}/${file_name}"
+    _download_file "$file_uri"
+  done
+}
+
+# Sets up Cloud Shell so necessary binaries and packages are installed upon VM startup
+# and also executes it to install pre-reqs
+cloudshell_vm_setup() {
+  _info "Installing necessary packages and setting up Cloud Shell startup..."
+  _p_echo "(This may take a while)"
+  
+  # Silence apt warnings in Cloud Shell
+  mkdir -p "$HOME/.cloudshell"
+  touch "$HOME/.cloudshell/no-apt-get-warning"
+
+  # Place .customize_environment in the right place
+  cp -- "${CONFIG_DIR}/.customize_environment" "${HOME}/.customize_environment"
+  chmod 755 "$HOME/.customize_environment"
+  
+  # Make a local bin directory
+  mkdir -p "$HOME/.local/bin"
+
+  # Run the installation of packages for the first time
+  #shellcheck source=.customize_environment
+  "$HOME/.customize_environment" 2>/dev/null 1>&2
+}
+
+# Performs user space ($HOME) one time configuration
+cloudshell_user_setup() {
+  _info "Setting up Cloud Shell user configuration..."
+  _p_echo "(This may take a while)"
+  #shellcheck disable=SC1090
+  source "$CONFIG_DIR/${FILE_NAMES[user_setup]}" >/dev/null 2>&1
+}
+
+## Sources main lab environment script and makes sure it's sourced each time a new shell is opened
+cloudshell_bash_setup() {
+  _info "Setting up .bashrc configuration..."
+
+  bash_config_loc="$HOME/.config/bash"
+  mkdir -p "$bash_config_loc"
+  
+  # Place bash config files in the right place
+  for config_file in "${FILE_NAMES[bash_main_config]}" "${FILE_NAMES[bash_custom_config]}" "${FILE_NAMES[bash_prompt]}"; do
+    cp -- "${CONFIG_DIR}/${config_file}" "${bash_config_loc}"
+    chmod 755 "${bash_config_loc}/${config_file}"
+  done
+
+  # Insert "source main_config.bash" into ".bashrc" if not there already
+  grep -qxF "source \"${bash_config_loc}/${FILE_NAMES[bash_main_config]}\"" "$HOME/.bashrc" || echo "source \"${bash_config_loc}/${FILE_NAMES[bash_main_config]}\"" >> "$HOME/.bashrc"
+}
+
+gemini_code_assist_setup() {
+  _info "Setting up Gemini Code Assist..."
+  gcloud services enable cloudaicompanion.googleapis.com \
+    --project "$project_id" \
+    --no-user-output-enabled 2>&1
+  gcloud projects add-iam-policy-binding "$project_id" \
+    --member="user:${USER}@qwiklabs.net" \
+    --role=roles/cloudaicompanion.user \
+    --no-user-output-enabled 2>/dev/null
+  gcloud projects add-iam-policy-binding "$project_id" \
+    --member="user:${USER}@qwiklabs.net" \
+    --role=roles/serviceusage.serviceUsageViewer \
+    --no-user-output-enabled 2>/dev/null
+}
+
+## Register this script has been run
+wrapup() {
+  touch "$CONFIG_DIR/.setup_qw_cs_run"
+  #_info "Now run ${bold}\"source \$HOME/.bashrc\"${reset} to make all changes effective"
+}
+
+## Main routine, follow configuration in sequential order
+main() {
+  _init_script
+  check_cloudshell
+  _info "Setting up the environment..."
+  check_gcp_env
+  gcloud_sdk_setup
+  download_assets
+  cloudshell_vm_setup
+  cloudshell_user_setup
+  cloudshell_bash_setup
+  [[ "$set_gemini" == "true" ]] && gemini_code_assist_setup
+  wrapup
+}
+
+main "${@}"

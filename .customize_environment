@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# (C) Javier Cañadillas, 2024 - javier@canadillas.org
+## Prevent this script from being sourced
+#shellcheck disable=SC2317
+return 0  2>/dev/null || :
+
+# Install shellcheck for debugging
+install_shellcheck() {
+  sudo apt -qq install shellcheck -y
+}
+
+# Install tree
+install_tree() {
+  sudo apt -qq install tree -y
+}
+
+# Install SDCC (Small Device C Compiler)
+install_sdcc() {
+  sudo apt -qq install sdcc -y
+}
+
+# Install gcc cross compiler for ARM
+install_gcc_arm() {
+  sudo apt -qq install gcc-arm-linux-gnueabihf -y
+}
+
+# Install Bat (Better cat)
+install_bat() {
+  sudo apt -qq install bat -y
+  # As bat will be installed as batcat, make a softlink in the $HOME/bin directory
+  ln -s /usr/bin/batcat "$HOME/.local/bin/bat"
+  local -r batcatconfdir="$HOME/.config/bat"
+  mkdir -p "$batcatconfdir" || _error "Cannot create $batcatconfdir"
+  cat <<EOF > "$batcatconfdir/config"
+    #Set the theme to "base16"
+    --theme="base16"
+EOF
+}
+
+# Unminimize the system
+system_unminimize() {
+  unminimize
+}
+
+main() {
+  #system_unminimize
+  install_sdcc
+  install_tree
+  install_gcc_arm
+  install_shellcheck
+  install_bat
+}
+
+main "${@}"

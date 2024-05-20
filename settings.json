@@ -1,0 +1,15 @@
+{
+  "extensions.autoUpdate": true,
+  "workbench.colorTheme": "One Dark Pro",
+  "cloudcode.duetAI.project": "$PROJECT_ID",
+  "editor.fontSize": 14,
+  "debug.console.fontSize": 14,
+  "terminal.integrated.fontSize": 14,
+  "cloudcode.duetAI.languages": [
+      "c",
+      "shellscript"
+  ],
+  "editor.accessibilitySupport": "off",
+  "cloudcode.project": "$PROJECT_ID",
+  "workbench.startupEditor": "none"
+}
