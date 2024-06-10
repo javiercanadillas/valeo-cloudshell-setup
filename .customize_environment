@@ -20,8 +20,10 @@ install_sdcc() {
   pushd "$(mktemp -d)" || _error "Cannot create temporary directory"
   curl -L "https://sourceforge.net/projects/sdcc/files/sdcc-linux-x86/3.5.0/sdcc-3.5.0-i386-unknown-linux2.5.tar.bz2/download" > "$sdcc_tar_file"
   dest_dir="$(tar -tf "$sdcc_tar_file" | head -1)"
-  tar -xvf "$sdcc_tar_file" && rm "$sdcc_tar_file" || _error "Cannot extract the tar file"
-  cp -r "${dest_dir}*" "/usr/local" || _error "Cannot move the extracted directory"
+  tar -xf "$sdcc_tar_file" && rm "$sdcc_tar_file" || _error "Cannot extract the tar file"
+  cd "${dest_dir}" && {
+    cp -r "*" "/usr/local" || _error "Cannot move the extracted directory"
+  }
   popd || _error "Cannot return to the original directory"
 
 }
