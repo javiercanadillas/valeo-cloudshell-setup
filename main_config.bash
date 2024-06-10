@@ -69,9 +69,9 @@ clean_work() {
 # Get solution
 get_solution() {
   echo "Getting solution..."
-  local -r solution_name="solution.zip" && shift
+  local -r solution_name="solution" && shift
   pushd "$WORKDIR" || exit 1
-  gsutil cp "gs://${PROJECT_ID}-solution/${solution_name}.zip" . && unzip "${solution_name}.zip" && rm "${solution_name}.zip"
+  gsutil cp "gs://${PROJECT_ID}-${solution_name}/${solution_name}.zip" . && unzip "${solution_name}.zip" && rm "${solution_name}.zip"
   popd || exit 1
 }
 
