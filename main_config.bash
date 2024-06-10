@@ -72,7 +72,13 @@ get_solution() {
   local -r solution_name="solution" && shift
   pushd "$WORKDIR" || exit 1
   gsutil cp "gs://${PROJECT_ID}-${solution_name}/${solution_name}.zip" . && unzip "${solution_name}.zip" && rm "${solution_name}.zip"
-  popd || exit 1
+  echo "Now you can test the solution by performing these steps\
+  - Go to the \"\$WORKDIR/solution\" directory\
+  - Run \`make clean\`
+  - Run \`make\`
+  The solution will be built and you can test it by running the \`.hex\` file \
+  that will be present in the \"\$WORKDIR/solution/bin\" directory."
+  popd || exit  1  
 }
 
 # Get milestone 1
