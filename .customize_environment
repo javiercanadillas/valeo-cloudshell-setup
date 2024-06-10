@@ -51,6 +51,7 @@ system_unminimize() {
 main() {
   #system_unminimize
   install_sdcc
+  install_gputils
   install_tree
   install_gcc_arm
   install_shellcheck
