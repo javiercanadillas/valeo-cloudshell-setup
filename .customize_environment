@@ -14,9 +14,16 @@ install_tree() {
   sudo apt -qq install tree -y
 }
 
-# Install SDCC (Small Device C Compiler)
+# Install SDCC (Small Device C Compiler) NON-FREE version
 install_sdcc() {
-  sudo apt -qq install sdcc -y
+  local -r sdcc_tar_file="sdcc.tar.bz2"
+  pushd "$(mktemp -d)" || _error "Cannot create temporary directory"
+  curl -L "https://sourceforge.net/projects/sdcc/files/sdcc-linux-x86/3.5.0/sdcc-3.5.0-i386-unknown-linux2.5.tar.bz2/download" > "$sdcc_tar_file"
+  dest_dir="$(tar -tf "$sdcc_tar_file" | head -1)"
+  tar -xvf "$sdcc_tar_file" && rm "$sdcc_tar_file" || _error "Cannot extract the tar file"
+  cp -r "${dest_dir}*" "/usr/local" || _error "Cannot move the extracted directory"
+  popd || _error "Cannot return to the original directory"
+
 }
 
 # Install gputils
@@ -32,14 +39,6 @@ install_gcc_arm() {
 # Install Bat (Better cat)
 install_bat() {
   sudo apt -qq install bat -y
-  # As bat will be installed as batcat, make a softlink in the $HOME/bin directory
-  ln -s /usr/bin/batcat "$HOME/.local/bin/bat"
-  local -r batcatconfdir="$HOME/.config/bat"
-  mkdir -p "$batcatconfdir" || _error "Cannot create $batcatconfdir"
-  cat <<EOF > "$batcatconfdir/config"
-    #Set the theme to "base16"
-    --theme="base16"
-EOF
 }
 
 # Unminimize the system

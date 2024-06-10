@@ -51,7 +51,19 @@ code_oss_main_setup() {
   _info "Setting up Code OSS basic configuration..."
   codeoss_settings_dest="$HOME/.codeoss/data/Machine/settings.json"
   # shellcheck disable=SC2154
-  envsubst < "$config_dir/${file_names[codeoss_settings]}" > "${codeoss_settings_dest}"
+  envsubst < "$CONFIG_DIR/${FILE_NAMES[codeoss_settings]}" > "${codeoss_settings_dest}"
+}
+
+customize_bat() {
+  _info "Customizing bat..."
+  hash batcat && {
+    local -r batcatconfdir="$HOME/.config/bat"
+    mkdir -p "$batcatconfdir" || _error "Cannot create $batcatconfdir"
+    cat <<EOF > "$batcatconfdir/config"
+#Set the theme to "base16"
+--theme="base16"
+EOF
+  }
 }
 
 main() {
