@@ -19,6 +19,11 @@ install_sdcc() {
   sudo apt -qq install sdcc -y
 }
 
+# Install gputils
+install_gputils() {
+  sudo apt -qq install gputils -y
+}
+
 # Install gcc cross compiler for ARM
 install_gcc_arm() {
   sudo apt -qq install gcc-arm-linux-gnueabihf -y

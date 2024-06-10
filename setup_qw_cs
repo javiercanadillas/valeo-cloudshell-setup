@@ -32,7 +32,7 @@ _init_script() {
   # Repo URIs for all assets
   git_base_uri="https://raw.githubusercontent.com/javiercanadillas/valeo-cloudshell-setup/${branch}"
   declare -A -g FILE_NAMES
-  export FILE_NAMES=(
+  FILE_NAMES=(
     [bash_main_config]="main_config.bash"
     [bash_custom_config]="custom_config.bash"
     [user_setup]="user_setup.bash"
@@ -113,7 +113,7 @@ check_gcp_env() {
 gcloud_sdk_setup() {
   _info "Setting up gcloud CLI configuration..."
   export CLOUDSDK_CONFIG="$HOME/.config/gcloud"
-  gcloud config configurations create default --no-user-output-enabled 1>&2
+  gcloud config configurations create default --no-user-output-enabled 2> /dev/null 1>&2
   gcloud config set project "$project_id" --no-user-output-enabled 1>&2
   gcloud config set compute/region "$region" --no-user-output-enabled --quiet --verbosity none 1>&2
   gcloud config set run/region "$region" --no-user-output-enabled 1>&2
