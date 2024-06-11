@@ -42,7 +42,7 @@ code_oss_extensions_setup() {
   local -r codeoss_extensions_installer="$CONFIG_DIR/${FILE_NAMES[extensions_installer]}"
   [[ -f $codeoss_extensions_installer ]] && {
     #shellcheck disable=SC1090
-    source "$codeoss_extensions_installer"
+    source "$codeoss_extensions_installer" && touch /tmp/extensions_setup_done
   }
 }
 
