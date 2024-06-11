@@ -22,7 +22,7 @@ install_sdcc() {
   dest_dir="$(tar -tf "$sdcc_tar_file" | head -1)"
   tar -xf "$sdcc_tar_file" && rm "$sdcc_tar_file" || _error "Cannot extract the tar file"
   cd "${dest_dir}" && {
-    cp -r "*" "/usr/local" || _error "Cannot move the extracted directory"
+    cp -r -- * "/usr/local" || _error "Cannot move the extracted directory"
   }
   popd || _error "Cannot return to the original directory"
 
