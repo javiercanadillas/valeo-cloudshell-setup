@@ -70,7 +70,7 @@ clean_work() {
 get_solution() {
   echo "Getting solution..."
   local -r solution_name="solution" && shift
-  pushd "$WORKDIR" || exit 1
+  pushd "$WORKDIR" > /dev/null 2>&1 || exit 1
   gsutil cp "gs://${PROJECT_ID}-${solution_name}/${solution_name}.zip" . && unzip "${solution_name}.zip" && rm "${solution_name}.zip"
   echo "Now you can test the solution by performing these steps\
   - Go to the \"\$WORKDIR/solution\" directory\
@@ -78,7 +78,7 @@ get_solution() {
   - Run \`make\`
   The solution will be built and you can test it by running the \`.hex\` file \
   that will be present in the \"\$WORKDIR/solution/bin\" directory."
-  popd || exit  1  
+  popd > /dev/null 2>&1 || exit  1  
 }
 
 # Get milestone 1
@@ -86,9 +86,9 @@ get_hint() {
   echo "Getting hint..."
   mkdir -p "$WORKDIR/hints"
   hint_name="$1" && shift
-  pushd "$WORKDIR" || exit 1
+  pushd "$WORKDIR" > /dev/null 2>&1 || exit 1
   gsutil cp "gs://${PROJECT_ID}-${hint_name}/${hint_name}.zip" . && unzip "${hint_name}.zip" && rm "${hint_name}.zip"
-  popd || exit 1
+  popd > /dev/null 2>&1 || exit 1
 }
 
 # Include prompt
