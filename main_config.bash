@@ -84,7 +84,6 @@ get_solution() {
 # Get milestone 1
 get_hint() {
   echo "Getting hint..."
-  mkdir -p "$WORKDIR/hints"
   hint_name="$1" && shift
   pushd "$WORKDIR" > /dev/null 2>&1 || exit 1
   gsutil cp "gs://${PROJECT_ID}-hints/${hint_name}.zip" . && unzip "${hint_name}.zip" && rm "${hint_name}.zip"
