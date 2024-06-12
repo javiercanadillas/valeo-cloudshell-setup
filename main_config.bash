@@ -37,7 +37,7 @@ complete -o default -F __start_kubectl k
 # Other aliases
 alias code='cloudshell edit'
 alias gconf='gcloud config configurations'
-hash batcat && alias bat='batcat'
+alias bat='batcat'
 
 # Grant access to codeoss in case it's not available
 command -v codeoss >/dev/null 2>&1 || {
