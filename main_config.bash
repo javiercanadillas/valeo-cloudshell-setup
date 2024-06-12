@@ -87,7 +87,7 @@ get_hint() {
   mkdir -p "$WORKDIR/hints"
   hint_name="$1" && shift
   pushd "$WORKDIR" > /dev/null 2>&1 || exit 1
-  gsutil cp "gs://${PROJECT_ID}-${hint_name}/${hint_name}.zip" . && unzip "${hint_name}.zip" && rm "${hint_name}.zip"
+  gsutil cp "gs://${PROJECT_ID}-hints/${hint_name}.zip" . && unzip "${hint_name}.zip" && rm "${hint_name}.zip"
   popd > /dev/null 2>&1 || exit 1
 }
 
